@@ -11,16 +11,6 @@
  * @return
  */
 std::string InstructionHelper::getInst(std::string inst) {
-    /*
-    std::string delimiter = ",";
-    std::string token = "";
-    int pos = 0;
-    while ((pos = inst.find(delimiter)) != std::string::npos) {
-        token = inst.substr(0, pos);
-        std::cout << token << std::endl;
-        inst.erase(0, pos + delimiter.length());
-    }
-     */
     std::vector<std::string> partes = {};
     std::string temp = "";
     for (int i = 0; i < inst.length(); i++) {
@@ -36,17 +26,26 @@ std::string InstructionHelper::getInst(std::string inst) {
     }
     std::string instTemp, tempRd;
     if (getTipo(partes[0]) == INST_DATOS) {
-        bool inmediato = false;
+        bool inmediato;
+        // verificacion si posee inmediato y que que parte
         if (partes.size() > 2) { // en caso de no tener 3er registro inmediato
             inmediato = isInmediato(partes[2]);
+        } else {
+            inmediato = isInmediato(partes[1]);
         }
-        if (inmediato) {
+        if (inmediato && partes.size() > 2) { // caso de que tenga inmediato y que tenga 3 partes
             instTemp += getHeader(partes[0], inmediato);
             instTemp += getRegistro(partes[1]);
             tempRd = partes[0].substr(3, partes[0].length());
             instTemp += getRegistro(tempRd);
             instTemp += getInmediato(partes[2], 14);
-        } else {
+        } else if (inmediato) { // caso de que tenga inmediato pero solo dos partes
+            instTemp += getHeader(partes[0], inmediato);
+            instTemp += BaseHelper::decimalToBin(0, 4); // no tiene Rn
+            tempRd = partes[0].substr(3, partes[0].length());
+            instTemp += getRegistro(tempRd);
+            instTemp += getInmediato(partes[1], 14);
+        } else { // caso de que del todo no tenga inmediato
             instTemp += getHeader(partes[0], inmediato);
             instTemp += getRegistro(partes[1]);
             tempRd = partes[0].substr(3, partes[0].length());
@@ -59,11 +58,19 @@ std::string InstructionHelper::getInst(std::string inst) {
             }
         }
     } else if (getTipo(partes[0]) == INST_MEMORIA) {
-        instTemp += getHeader(partes[0], false);
-        instTemp += getRegistro(partes[1]);
-        tempRd = partes[0].substr(3, partes[0].length());
-        instTemp += getRegistro(tempRd);
-        instTemp += getInmediato(partes[2], 14);
+        if (partes.size() > 2) { // caso de incluir el inmediato
+            instTemp += getHeader(partes[0], false);
+            instTemp += getRegistro(partes[1]);
+            tempRd = partes[0].substr(3, partes[0].length());
+            instTemp += getRegistro(tempRd);
+            instTemp += getInmediato(partes[2], 14);
+        } else { // caso de no especifiar inmediato, se asume un cero
+            instTemp += getHeader(partes[0], false);
+            instTemp += getRegistro(partes[1]);
+            tempRd = partes[0].substr(3, partes[0].length());
+            instTemp += getRegistro(tempRd);
+            instTemp += BaseHelper::decimalToBin(0, 14);
+        }
     } else if (getTipo(partes[0]) == INST_BRANCH) {
         instTemp += getHeader(partes[0], false);
     }
@@ -148,7 +155,7 @@ std::string InstructionHelper::getRegistro(std::string reg) {
  */
 int InstructionHelper::getTipo(std::string inst) {
     std::string instTemp = inst.substr(0, 3);
-    std::cout << instTemp << std::endl;
+    //std::cout << instTemp << std::endl;
     std::string temp;
     for (int i = 0; i < cmdTipoDatos.size(); i++) {
         if (cmdTipoDatos[i] == instTemp) {
@@ -184,8 +191,69 @@ std::string InstructionHelper::getBranch(std::string inst) {
     }
     if (temp == "") {
         temp += BaseHelper::decimalToBin(7, 3);
-        temp += cmdTipoMemoria[cmdTipoBranch.size() - 1];
+        temp += cmdTipoBranch[cmdTipoBranch.size() - 1];
         temp += getInmediato(inst.substr(1, inst.length()), 27);
     }
     return temp;
+}
+
+
+/**
+ * Retorna un vector con las instrucciones leidas
+ * @param fileDir
+ * @return
+ */
+std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir) {
+    std::vector<std::string> tempInst;
+    std::string temp;
+    std::ifstream archivo; // archivo en modo in
+    archivo.open(fileDir);
+    if (archivo.is_open()) {
+        while (getline(archivo, temp)) {
+            if (temp[0] == '\t') {
+                temp = temp.substr(1, temp.length());
+            }
+            tempInst.push_back(temp);
+            temp = "";
+        }
+        archivo.close();
+    } else {
+        std::cout << ">> No se puede leer el archivo, verifique la ruta" << std::endl;
+    }
+    return tempInst;
+}
+
+std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::string> instrucciones) {
+    std::vector<TagsInfo> tempTags;
+    TagsInfo temp;
+    int PC = 0;
+    int size;
+    for (int i = 0; i < instrucciones.size(); i++) {
+        size = instrucciones[i].length(); // longitud de la instruccion i
+        if (instrucciones[i][size - 1] == ':') {
+            temp.numInstruccion = PC;
+            temp.tag = instrucciones[i].substr(0, size - 1);
+            tempTags.push_back(temp);
+        } else {
+            PC++;
+        }
+    }
+    return tempTags;
+}
+
+std::vector<std::string> InstructionHelper::splitInst(std::string inst, char delimitador) {
+    std::vector<std::string> partes = {};
+    std::string temp = "";
+    for (int i = 0; i < inst.length(); i++) {
+        if (inst[i] == delimitador) {
+            partes.push_back(temp);
+            temp = "";
+        } else if (i == inst.length() - 1) {
+            temp += inst[i];
+            partes.push_back(temp);
+        } else {
+            temp += inst[i];
+        }
+    }
+    return partes;
 }

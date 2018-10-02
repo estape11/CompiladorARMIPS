@@ -13,8 +13,17 @@
 #include <string>
 #include <vector>
 #include "BaseHelper.h"
+#include <iostream>
+#include <fstream>
 
+struct TagsInfo {
+    int numInstruccion;
+    std::string tag;
+};
 
+/**
+ * Definicion de los tokens de las instrucciones
+ */
 std::vector<std::string> static cmdTipoDatos = {"NOP", "SUB", "ADD", "MOV", "", "", "ORR", "CMP", "LSL", "LSR", "AVR",
                                                 "CUM", "00"};
 std::vector<std::string> static cmdTipoMemoria = {"STR", "LPX", "SPX", "LDR", "01"};
@@ -39,6 +48,12 @@ public:
     int static getTipo(std::string);
 
     std::string static getBranch(std::string inst);
+
+    std::vector<std::string> static getInstrucciones(std::string);
+
+    std::vector<TagsInfo> static getTagsAddress(std::vector<std::string>);
+
+    std::vector<std::string> static splitInst(std::string, char);
 };
 
 
