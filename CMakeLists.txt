@@ -3,4 +3,4 @@ project(CompiladorARMIPS)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(CompiladorARMIPS main.cpp)
+add_executable(CompiladorARMIPS main.cpp InstructionHelper.cpp InstructionHelper.h BaseHelper.cpp BaseHelper.h)
