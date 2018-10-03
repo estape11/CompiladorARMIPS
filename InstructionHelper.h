@@ -65,6 +65,8 @@ public:
     int static isThere(std::vector<T>, T);
 
     int static min(int, int);
+
+    std::string static removeComentarios(std::string);
 };
 
 

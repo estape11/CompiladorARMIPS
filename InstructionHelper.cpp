@@ -210,10 +210,10 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
     archivo.open(fileDir);
     if (archivo.is_open()) {
         while (getline(archivo, temp)) {
-            std::cout << "Linea;" << temp << ";" << std::endl;
             if (temp[0] == '\t') {
                 temp = temp.substr(1, temp.length());
             }
+            temp=removeComentarios(temp);// elimina los comentarios
             if (temp != "") {
                 tempInst.push_back(temp);
                 temp = "";
@@ -224,6 +224,18 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
         std::cout << ">> No se puede leer el archivo, verifique la ruta" << std::endl;
     }
     return tempInst;
+}
+
+std::string InstructionHelper::removeComentarios(std::string inst) {
+    std::string temp;
+    for (int i = 0; i < inst.length(); i++) {
+        if (inst[i] == '#') {
+            break;
+        } else {
+            temp += inst[i];
+        }
+    }
+    return temp;
 }
 
 /**
