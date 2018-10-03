@@ -210,11 +210,14 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
     archivo.open(fileDir);
     if (archivo.is_open()) {
         while (getline(archivo, temp)) {
+            std::cout << "Linea;" << temp << ";" << std::endl;
             if (temp[0] == '\t') {
                 temp = temp.substr(1, temp.length());
             }
-            tempInst.push_back(temp);
-            temp = "";
+            if (temp != "") {
+                tempInst.push_back(temp);
+                temp = "";
+            }
         }
         archivo.close();
     } else {
