@@ -223,6 +223,11 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
     return tempInst;
 }
 
+/**
+ * Obtiene los label dentro de las instrucciones
+ * @param instrucciones
+ * @return
+ */
 std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::string> instrucciones) {
     std::vector<TagsInfo> tempTags;
     TagsInfo temp;
@@ -241,6 +246,12 @@ std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::string>
     return tempTags;
 }
 
+/**
+ * Divide las instrucciones con un delimitador
+ * @param inst
+ * @param delimitador
+ * @return
+ */
 std::vector<std::string> InstructionHelper::splitInst(std::string inst, char delimitador) {
     std::vector<std::string> partes = {};
     std::string temp = "";
@@ -256,4 +267,186 @@ std::vector<std::string> InstructionHelper::splitInst(std::string inst, char del
         }
     }
     return partes;
+}
+
+/**
+ * Agrega NOPs para solucionar el riesgo del branch
+ * @param inst
+ * @return
+ */
+std::vector<std::string> InstructionHelper::fixBranches(std::vector<std::string> inst) {
+    std::vector<std::string> tempFix;
+    std::string nop = BaseHelper::decimalToBin(0, 32);
+    int tipoInst;
+    for (int i = 0; i < inst.size(); i++) {
+        tipoInst = BaseHelper::binToDecimal(inst[i].substr(3, 2));
+        if (tipoInst == 2 && i != (inst.size() - 1)) {
+            tempFix.push_back(inst[i]);
+            // se agregan 4 nops a branch
+            tempFix.push_back(nop);
+            tempFix.push_back(nop);
+            tempFix.push_back(nop);
+            tempFix.push_back(nop);
+        } else {
+            tempFix.push_back(inst[i]);
+        }
+    }
+    return tempFix;
+}
+
+/**
+ * Agrega NOPs para reparar la dependencia de datos
+ * @param inst
+ * @return
+ */
+std::vector<std::string> InstructionHelper::fixDependenciaDatos(std::vector<std::string> inst) {
+    std::vector<std::string> tempFix;
+    std::vector<std::string> registrosDestinoUso = {"", "", "", ""}; // max 4 -> if >4 -> pop_back()
+    std::string nop = BaseHelper::decimalToBin(0, 32);
+    std::string rd, rs, rn;
+    int rdIndex, rsIndex, rnIndex; // para saber en que posicion esta el registro destino en uso y calcular nops
+    int tipoInst;
+    for (int i = 0; i < inst.size(); i++) {
+        // para monitorear los registros usados
+        //for (int j = 0; j < registrosDestinoUso.size(); j++) {
+        //    std::cout << registrosDestinoUso[j] << " ,";
+        //}
+        //std::cout << std::endl;
+        tipoInst = BaseHelper::binToDecimal(inst[i].substr(3, 2));
+        if (inst[i] == nop) {
+            tempFix.push_back(inst[i]);
+            registrosDestinoUso.pop_back();
+            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+        } else if (tipoInst == 0) {
+            rn = inst[i].substr(10, 4);
+            rd = inst[i].substr(14, 4);
+            if (inst[i][5] == '1') { // inmediato
+                if (isThere(cmdRdOper, inst[i].substr(6, 4)) != -1) { // Caso CMP
+                    rdIndex = isThere(registrosDestinoUso, rd);
+                    if (rdIndex != -1) { // en caso que algun Rd este en uso
+                        for (int k = 0; k < (3 - rdIndex); k++) { // la cantidad de nops
+                            tempFix.push_back(nop);
+                            registrosDestinoUso.pop_back();
+                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+                        }
+                    }
+                    tempFix.push_back(inst[i]);
+                    registrosDestinoUso.pop_back();
+                    registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+                } else {
+                    rnIndex = isThere(registrosDestinoUso, rn);
+                    if (rnIndex != -1) { // en caso que algun Rd este en uso
+                        for (int k = 0; k < (3 - rnIndex); k++) { // la cantidad de nops
+                            tempFix.push_back(nop);
+                            registrosDestinoUso.pop_back();
+                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+                        }
+                    }
+                    tempFix.push_back(inst[i]);
+                    registrosDestinoUso.pop_back();
+                    registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
+                }
+            } else { // sin inmediato
+                rs = inst[i].substr(18, 4);
+                if (isThere(cmdRdOper, inst[i].substr(6, 4)) != -1) { // Caso CMP
+                    rdIndex = isThere(registrosDestinoUso, rd);
+                    rnIndex = isThere(registrosDestinoUso, rn);
+                    if (rdIndex != -1 || rnIndex != -1) { // en caso que algun Rd este en uso
+                        for (int k = 0; k < (3 - min(rdIndex, rnIndex)); k++) { // la cantidad de nops
+                            tempFix.push_back(nop);
+                            registrosDestinoUso.pop_back();
+                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+                        }
+                    }
+                    tempFix.push_back(inst[i]);
+                    registrosDestinoUso.pop_back();
+                    registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+                } else {
+                    rnIndex = isThere(registrosDestinoUso, rn);
+                    rsIndex = isThere(registrosDestinoUso, rs);
+                    if (rnIndex != -1 || rsIndex != -1) { // en caso que algun Rd este en uso
+                        for (int k = 0; k < (3 - min(rnIndex, rsIndex)); k++) { // la cantidad de nops
+                            tempFix.push_back(nop);
+                            registrosDestinoUso.pop_back();
+                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+                        }
+                    }
+                    tempFix.push_back(inst[i]);
+                    registrosDestinoUso.pop_back();
+                    registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
+                }
+            }
+        } else if (tipoInst == 1) {
+            rn = inst[i].substr(10, 4);
+            rd = inst[i].substr(14, 4);
+            if (isThere(cmdRdOper, inst[i].substr(5, 2)) != -1) { // Caso STR o SPX
+                rdIndex = isThere(registrosDestinoUso, rd);
+                rnIndex = isThere(registrosDestinoUso, rn);
+                if (rdIndex != -1 || rnIndex != -1) { // en caso que algun Rd este en usos
+                    for (int k = 0; k < (3 - min(rdIndex, rnIndex)); k++) { // la cantidad de nops
+                        tempFix.push_back(nop);
+                        registrosDestinoUso.pop_back();
+                        registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+                    }
+                }
+                tempFix.push_back(inst[i]);
+                registrosDestinoUso.pop_back();
+                registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+            } else {
+                rnIndex = isThere(registrosDestinoUso, rn);
+                if (rnIndex != -1) { // en caso que algun Rd este en uso
+                    for (int k = 0; k < (3 - rnIndex); k++) { // la cantidad de nops
+                        tempFix.push_back(nop);
+                        registrosDestinoUso.pop_back();
+                        registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+                    }
+                }
+                tempFix.push_back(inst[i]);
+                registrosDestinoUso.pop_back();
+                registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
+            }
+        } else {
+            tempFix.push_back(inst[i]);
+            registrosDestinoUso.pop_back();
+            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+        }
+    }
+    return tempFix;
+}
+
+/**
+ * Para saber si hay un elemento especifico dentro del vector
+ * @tparam T
+ * @param vector
+ * @param dato
+ * @return
+ */
+template<class T>
+int InstructionHelper::isThere(std::vector<T> vector, T dato) {
+    int temp = -1;
+    for (int i = 0; i < vector.size(); i++) {
+        if (vector[i] == dato) {
+            temp = i;
+            break;
+        }
+    }
+    return temp;
+}
+
+/**
+ * Compara solo si son positivos
+ * @param a
+ * @param b
+ * @return
+ */
+int InstructionHelper::min(int a, int b) {
+    if (a < 0) {
+        return b;
+    } else if (b < 0) {
+        return a;
+    } else if (a <= b) {
+        return a;
+    } else {
+        return b;
+    }
 }

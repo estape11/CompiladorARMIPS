@@ -11,8 +11,10 @@
  */
 int BaseHelper::binToDecimal(std::string bin) {
     int temp = 0;
-    for (int i = 0; i < bin.length(); i++) {
-        temp += (bin[i] - 48) * pow(2, i); // desfasa la conversion char -> int
+    int index;
+    for (int i = bin.length() - 1; i >= 0; i--) {
+        index = bin.length() - 1 - i;
+        temp += (bin[i] - 48) * pow(2, index); // desfasa la conversion char -> int
     }
     return temp;
 }
