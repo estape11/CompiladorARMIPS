@@ -213,7 +213,7 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
             if (temp[0] == '\t') {
                 temp = temp.substr(1, temp.length());
             }
-            temp=removeComentarios(temp);// elimina los comentarios
+            temp = removeComentarios(temp);// elimina los comentarios
             if (temp != "") {
                 tempInst.push_back(temp);
                 temp = "";
@@ -316,7 +316,7 @@ std::vector<std::string> InstructionHelper::fixBranches(std::vector<std::string>
  */
 std::vector<std::string> InstructionHelper::fixDependenciaDatos(std::vector<std::string> inst) {
     std::vector<std::string> tempFix;
-    std::vector<std::string> registrosDestinoUso = {"", "", "", ""}; // max 4 -> if >4 -> pop_back()
+    std::vector<std::string> registrosDestinoUso = {"", "", "", ""}; // max 4 -> if >4 -> pop_back(), rota
     std::string nop = BaseHelper::decimalToBin(0, 32);
     std::string rd, rs, rn;
     int rdIndex, rsIndex, rnIndex; // para saber en que posicion esta el registro destino en uso y calcular nops
@@ -464,4 +464,28 @@ int InstructionHelper::min(int a, int b) {
     } else {
         return b;
     }
+}
+
+bool InstructionHelper::saveInstrucciones(std::vector<std::string> inst, std::string dir) {
+    std::string dirTemp;
+    bool temp = false;
+    for (int i = dir.length() - 1; i >= 0; i--) {
+        if (dir[i] == '.') {
+            dirTemp = dir.substr(0, i);
+            break;
+        }
+    }
+    dirTemp += ".bin"; // extension del archivo compilado
+    std::remove(dirTemp.c_str());
+    std::ofstream archivo(dirTemp);
+    if (archivo.is_open()) {
+        for (int i = 0; i < inst.size(); i++) {
+            if (i == inst.size() - 1) {
+                archivo << inst[i];
+            } else {
+                archivo << inst[i] << std::endl;
+            }
+        }
+    }
+    return temp;
 }

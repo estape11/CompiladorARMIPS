@@ -67,6 +67,8 @@ public:
     int static min(int, int);
 
     std::string static removeComentarios(std::string);
+
+    bool static saveInstrucciones(std::vector<std::string>, std::string);
 };
 
 

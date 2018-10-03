@@ -1,19 +1,16 @@
 #include <iostream>
 #include "BaseHelper.h"
 #include "InstructionHelper.h"
+#include <ctime>
 
 #define COMPILATION_ERROR -1
 
-void pruebasInst() {
-    //int nueve = 0b01001;
-    std::string t(2, '0');
-    std::cout << "Inst ADD R0, R1, R2: " << InstructionHelper::getInst("AVR R1,R2") << std::endl;
-    std::cout << "Header para ADDR1 sin inmediato " << InstructionHelper::getHeader("STRR1", false)
-              << std::endl;
-    std::cout << "Esto es " << BaseHelper::getExtendN('0', 10, "1010") << std::endl;
-    std::cout << "-10 es " << BaseHelper::decimalToBin(-10) << std::endl;
-}
-
+/**
+ * Main del programa, debe llamarse con parametros para ejecutar el programa
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char *argv[]) {
     if (argc != 1) {
         std::string fileDir, condicion;
@@ -21,11 +18,13 @@ int main(int argc, char *argv[]) {
             fileDir = std::string(argv[argc - 1]);
             condicion = std::string(argv[1]); // si es -c
             if (condicion == "-c") {
+                // Etapa de lectura del archivo a compilar
                 std::vector<std::string> instrucciones = InstructionHelper::getInstrucciones(fileDir);
                 std::vector<TagsInfo> tags = InstructionHelper::getTagsAddress(instrucciones);
                 std::vector<std::string> instruccionesBin;
                 std::string instBinTemp;
                 // Etapa de compilacion de ASM a BIN
+                auto tiempoInicio = std::chrono::high_resolution_clock::now();
                 for (int i = 0; i < instrucciones.size(); i++) {
                     try {
                         if (instrucciones[i][instrucciones[i].length() - 1] != ':') {
@@ -63,11 +62,16 @@ int main(int argc, char *argv[]) {
                 }
                 // Etapa de correccion de NOPs en Branch
                 std::vector<std::string> instBinBranches = InstructionHelper::fixBranches(instruccionesBin);
-                std::vector<std::string> instBinFull = InstructionHelper::fixDependenciaDatos(instBinBranches);
                 // Etapa de correccion de errores de datos
-                for (int i = 0; i < instBinFull.size(); i++) {
-                    std::cout << instBinFull[i] << std::endl;
-                }
+                std::vector<std::string> instBinFull = InstructionHelper::fixDependenciaDatos(instBinBranches);
+                // Etapa de guardado
+                InstructionHelper::saveInstrucciones(instBinFull, fileDir);
+                // output en pantalla
+                auto tiempoFinal = std::chrono::high_resolution_clock::now();
+                std::cout << ">> Compilacion realizada con exito, tiempo transcurrido "
+                          << std::chrono::duration_cast<std::chrono::milliseconds>(tiempoFinal - tiempoInicio).count()
+                          << " ms"
+                          << std::endl;
             } else {
                 std::cout << ">> Bandera de compilacion no activada" << std::endl;
             }
