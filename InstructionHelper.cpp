@@ -14,7 +14,7 @@ std::string InstructionHelper::getInst(std::string inst) {
     std::vector<std::string> partes = {};
     std::string temp = "";
     for (int i = 0; i < inst.length(); i++) {
-        if (inst[i] == ',') {
+        if ((inst[i] == ',' || inst[i] == ' ') && temp != "") {
             partes.push_back(temp);
             temp = "";
         } else if (i == inst.length() - 1) {
@@ -24,33 +24,30 @@ std::string InstructionHelper::getInst(std::string inst) {
             temp += inst[i];
         }
     }
-    std::string instTemp, tempRd;
+    std::string instTemp;
     if (getTipo(partes[0]) == INST_DATOS) {
         bool inmediato;
         // verificacion si posee inmediato y que que parte
-        if (partes.size() > 2) { // en caso de no tener 3er registro inmediato
-            inmediato = isInmediato(partes[2]);
+        if (partes.size() > 3) { // en caso de no tener 3er registro inmediato
+            inmediato = isInmediato(partes[3]);
         } else {
-            inmediato = isInmediato(partes[1]);
+            inmediato = isInmediato(partes[2]);
         }
-        if (inmediato && partes.size() > 2) { // caso de que tenga inmediato y que tenga 3 partes
+        if (inmediato && partes.size() > 3) { // caso de que tenga inmediato y que tenga 4 partes
             instTemp += getHeader(partes[0], inmediato);
+            instTemp += getRegistro(partes[2]);
             instTemp += getRegistro(partes[1]);
-            tempRd = partes[0].substr(3, partes[0].length());
-            instTemp += getRegistro(tempRd);
-            instTemp += getInmediato(partes[2], 14);
-        } else if (inmediato) { // caso de que tenga inmediato pero solo dos partes
+            instTemp += getInmediato(partes[3], 14);
+        } else if (inmediato) { // caso de que tenga inmediato pero solo 3 partes
             instTemp += getHeader(partes[0], inmediato);
             instTemp += BaseHelper::decimalToBin(0, 4); // no tiene Rn
-            tempRd = partes[0].substr(3, partes[0].length());
-            instTemp += getRegistro(tempRd);
-            instTemp += getInmediato(partes[1], 14);
-        } else { // caso de que del todo no tenga inmediato
-            instTemp += getHeader(partes[0], inmediato);
             instTemp += getRegistro(partes[1]);
-            tempRd = partes[0].substr(3, partes[0].length());
-            instTemp += getRegistro(tempRd);
-            if (partes.size() < 3) {
+            instTemp += getInmediato(partes[2], 14);
+        } else { // caso de que del to-do no tenga inmediato
+            instTemp += getHeader(partes[0], inmediato);
+            instTemp += getRegistro(partes[2]);
+            instTemp += getRegistro(partes[1]);
+            if (partes.size() < 4) {
                 instTemp += BaseHelper::decimalToBin(0, 14);
             } else {
                 instTemp += getRegistro(partes[2]);
@@ -58,17 +55,15 @@ std::string InstructionHelper::getInst(std::string inst) {
             }
         }
     } else if (getTipo(partes[0]) == INST_MEMORIA) {
-        if (partes.size() > 2) { // caso de incluir el inmediato
+        if (partes.size() > 3) { // caso de incluir el inmediato
             instTemp += getHeader(partes[0], false);
+            instTemp += getRegistro(partes[2]);
             instTemp += getRegistro(partes[1]);
-            tempRd = partes[0].substr(3, partes[0].length());
-            instTemp += getRegistro(tempRd);
-            instTemp += getInmediato(partes[2], 14);
+            instTemp += getInmediato(partes[3], 14);
         } else { // caso de no especifiar inmediato, se asume un cero
             instTemp += getHeader(partes[0], false);
+            instTemp += getRegistro(partes[2]);
             instTemp += getRegistro(partes[1]);
-            tempRd = partes[0].substr(3, partes[0].length());
-            instTemp += getRegistro(tempRd);
             instTemp += BaseHelper::decimalToBin(0, 14);
         }
     } else if (getTipo(partes[0]) == INST_BRANCH) {
@@ -76,6 +71,7 @@ std::string InstructionHelper::getInst(std::string inst) {
     }
 
     return instTemp;
+
 }
 
 /**
@@ -86,10 +82,18 @@ std::string InstructionHelper::getInst(std::string inst) {
  */
 std::string InstructionHelper::getHeader(std::string inst, bool inmediato) {
     std::string instTemp = inst.substr(0, 3);
+    std::string condiTemp;
     std::string temp;
+    int condIndex;
     for (int i = 0; i < cmdTipoDatos.size(); i++) {
         if (cmdTipoDatos[i] == instTemp) {
-            temp += BaseHelper::decimalToBin(0, 3);
+            condiTemp = inst.substr(3, inst.length());
+            condIndex = isThere(condTipoDatos, condiTemp);
+            if (condIndex != -1) {
+                temp += BaseHelper::decimalToBin(condIndex, 3);
+            } else {
+                temp += BaseHelper::decimalToBin(7, 3); // incondicional
+            }
             temp += cmdTipoDatos[cmdTipoDatos.size() - 1];
             if (inmediato) {
                 temp += '1';
@@ -102,7 +106,14 @@ std::string InstructionHelper::getHeader(std::string inst, bool inmediato) {
     }
     for (int i = 0; i < cmdTipoMemoria.size(); i++) {
         if (cmdTipoMemoria[i] == instTemp) {
-            temp += BaseHelper::decimalToBin(0, 3);
+            //temp += BaseHelper::decimalToBin(0, 3);
+            condiTemp = inst.substr(3, inst.length());
+            condIndex = isThere(condTipoDatos, condiTemp);
+            if (condIndex != -1) {
+                temp += BaseHelper::decimalToBin(condIndex, 3);
+            } else {
+                temp += BaseHelper::decimalToBin(7, 3); // incondicional
+            }
             temp += cmdTipoMemoria[cmdTipoMemoria.size() - 1];
             temp += BaseHelper::decimalToBin(i, 2);
             temp += BaseHelper::decimalToBin(0, 3);
@@ -210,7 +221,7 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
     archivo.open(fileDir);
     if (archivo.is_open()) {
         while (getline(archivo, temp)) {
-            if (temp[0] == '\t') {
+            if (temp[0] == '\t') { // omite tabs
                 temp = temp.substr(1, temp.length());
             }
             temp = removeComentarios(temp);// elimina los comentarios
@@ -271,7 +282,7 @@ std::vector<std::string> InstructionHelper::splitInst(std::string inst, char del
     std::vector<std::string> partes = {};
     std::string temp = "";
     for (int i = 0; i < inst.length(); i++) {
-        if (inst[i] == delimitador) {
+        if ((inst[i] == delimitador) && temp != "") {
             partes.push_back(temp);
             temp = "";
         } else if (i == inst.length() - 1) {
