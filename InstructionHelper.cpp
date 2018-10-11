@@ -258,12 +258,12 @@ std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::string>
     std::vector<TagsInfo> tempTags;
     TagsInfo temp;
     int PC = 0;
-    int size;
-    for (int i = 0; i < instrucciones.size(); i++) {
-        size = instrucciones[i].length(); // longitud de la instruccion i
-        if (instrucciones[i][size - 1] == ':') {
+    int index;
+    for (auto &instruccion : instrucciones) {
+        index = isThere(instruccion, ':');
+        if (index != -1) {
             temp.numInstruccion = PC;
-            temp.tag = instrucciones[i].substr(0, size - 1);
+            temp.tag = instruccion.substr(0, index);
             tempTags.push_back(temp);
         } else {
             PC++;
@@ -452,6 +452,24 @@ int InstructionHelper::isThere(std::vector<T> vector, T dato) {
     int temp = -1;
     for (int i = 0; i < vector.size(); i++) {
         if (vector[i] == dato) {
+            temp = i;
+            break;
+        }
+    }
+    return temp;
+}
+
+/**
+ * Para saber si hay un elemento especifico dentro del vector
+ * @tparam T
+ * @param vector
+ * @param dato
+ * @return
+ */
+int InstructionHelper::isThere(std::string dato, char letra) {
+    int temp = -1;
+    for (int i = 0; i < dato.size(); i++) {
+        if (dato[i] == letra) {
             temp = i;
             break;
         }

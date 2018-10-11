@@ -3,6 +3,7 @@
 #include "InstructionHelper.h"
 #include <ctime>
 #include <chrono>
+
 #define COMPILATION_ERROR -1
 
 /**
@@ -27,7 +28,7 @@ int main(int argc, char *argv[]) {
                 auto tiempoInicio = std::chrono::high_resolution_clock::now();
                 for (int i = 0; i < instrucciones.size(); i++) {
                     try {
-                        if (instrucciones[i][instrucciones[i].length() - 1] != ':') {
+                        if (InstructionHelper::isThere(instrucciones[i], ':') == -1) {
                             if (instrucciones[i][0] == 'B') { // caso de branches
                                 std::vector<std::string> instTemp = InstructionHelper::splitInst(instrucciones[i], ' ');
                                 for (int j = 0; j < tags.size(); j++) { // busco la direccion del tag
