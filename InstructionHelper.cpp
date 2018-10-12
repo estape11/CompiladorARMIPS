@@ -10,66 +10,54 @@
  * @param inst
  * @return
  */
-std::string InstructionHelper::getInst(std::string inst) {
-    std::vector<std::string> partes = {};
-    std::string temp = "";
-    for (int i = 0; i < inst.length(); i++) {
-        if ((inst[i] == ',' || inst[i] == ' ') && temp != "") {
-            partes.push_back(temp);
-            temp = "";
-        } else if (i == inst.length() - 1) {
-            temp += inst[i];
-            partes.push_back(temp);
-        } else if (inst[i] != ' ') {
-            temp += inst[i];
-        }
-    }
+std::string InstructionHelper::getInst(std::vector<std::string> inst) {
     std::string instTemp;
-    if (temp == "NOP") {
+    if (inst[0] == "NOP") {
         instTemp = BaseHelper::decimalToBin(0, 32);
-    } else if (getTipo(partes[0]) == INST_DATOS) {
+    } else if (getTipo(inst[0]) == INST_DATOS) {
         bool inmediato;
         // verificacion si posee inmediato y que que parte
-        if (partes.size() > 3) { // en caso de no tener 3er registro inmediato
-            inmediato = isInmediato(partes[3]);
+        if (inst.size() > 3) { // en caso de no tener 3er registro inmediato
+            inmediato = isInmediato(inst[3]);
         } else {
-            inmediato = isInmediato(partes[2]);
+            inmediato = isInmediato(inst[2]);
         }
-        if (inmediato && partes.size() > 3) { // caso de que tenga inmediato y que tenga 4 partes
-            instTemp += getHeader(partes[0], inmediato);
-            instTemp += getRegistro(partes[2]);
-            instTemp += getRegistro(partes[1]);
-            instTemp += getInmediato(partes[3], 14);
-        } else if (inmediato) { // caso de que tenga inmediato pero solo 3 partes
-            instTemp += getHeader(partes[0], inmediato);
+        if (inmediato && inst.size() > 3) { // caso de que tenga inmediato y que tenga 4 inst
+            instTemp += getHeader(inst[0], inmediato);
+            instTemp += getRegistro(inst[2]);
+            instTemp += getRegistro(inst[1]);
+            instTemp += getInmediato(inst[3], 14);
+        } else if (inmediato) { // caso de que tenga inmediato pero solo 3 inst
+            instTemp += getHeader(inst[0], inmediato);
             instTemp += BaseHelper::decimalToBin(0, 4); // no tiene Rn
-            instTemp += getRegistro(partes[1]);
-            instTemp += getInmediato(partes[2], 14);
+            instTemp += getRegistro(inst[1]);
+            instTemp += getInmediato(inst[2], 14);
         } else { // caso de que del to-do no tenga inmediato
-            instTemp += getHeader(partes[0], inmediato);
-            instTemp += getRegistro(partes[2]);
-            instTemp += getRegistro(partes[1]);
-            if (partes.size() < 4) {
+            instTemp += getHeader(inst[0], inmediato);
+            instTemp += getRegistro(inst[2]);
+            instTemp += getRegistro(inst[1]);
+            if (inst.size() < 4) {
                 instTemp += BaseHelper::decimalToBin(0, 14);
             } else {
-                instTemp += getRegistro(partes[2]);
+                instTemp += getRegistro(inst[2]);
                 instTemp += BaseHelper::decimalToBin(0, 10);
             }
         }
-    } else if (getTipo(partes[0]) == INST_MEMORIA) {
-        if (partes.size() > 3) { // caso de incluir el inmediato
-            instTemp += getHeader(partes[0], false);
-            instTemp += getRegistro(partes[2]);
-            instTemp += getRegistro(partes[1]);
-            instTemp += getInmediato(partes[3], 14);
+    } else if (getTipo(inst[0]) == INST_MEMORIA) {
+        if (inst.size() > 3) { // caso de incluir el inmediato
+            instTemp += getHeader(inst[0], false);
+            instTemp += getRegistro(inst[2]);
+            instTemp += getRegistro(inst[1]);
+            instTemp += getInmediato(inst[3], 14);
         } else { // caso de no especifiar inmediato, se asume un cero
-            instTemp += getHeader(partes[0], false);
-            instTemp += getRegistro(partes[2]);
-            instTemp += getRegistro(partes[1]);
+            instTemp += getHeader(inst[0], false);
+            instTemp += getRegistro(inst[2]);
+            instTemp += getRegistro(inst[1]);
             instTemp += BaseHelper::decimalToBin(0, 14);
         }
-    } else if (getTipo(partes[0]) == INST_BRANCH) {
-        instTemp += getHeader(partes[0], false);
+    } else if (getTipo(inst[0]) == INST_BRANCH) {
+        instTemp += getHeader(inst[0], false);
+        instTemp += inst[1];
     }
     return instTemp;
 
@@ -121,7 +109,11 @@ std::string InstructionHelper::getHeader(std::string inst, bool inmediato) {
             return temp;
         }
     }
-    temp = getBranch(inst);
+    int branch = isThere(cmdTipoBranch, inst);
+    if (branch != -1) {
+        temp += BaseHelper::decimalToBin(branch, 3);
+        temp += cmdTipoBranch[cmdTipoBranch.size() - 1];
+    }
     return temp;
 }
 
@@ -215,7 +207,7 @@ std::string InstructionHelper::getBranch(std::string inst) {
  * @param fileDir
  * @return
  */
-std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir) {
+std::vector<std::vector<std::string>> InstructionHelper::getInstrucciones(std::string fileDir) {
     std::vector<std::string> tempInst;
     std::string temp;
     std::ifstream archivo; // archivo en modo in
@@ -238,7 +230,7 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
     } else {
         std::cout << ">> No se puede leer el archivo, verifique la ruta" << std::endl;
     }
-    return tempInst;
+    return splitInst(tempInst);
 }
 
 std::string InstructionHelper::removeComentarios(std::string inst) {
@@ -260,16 +252,16 @@ std::string InstructionHelper::removeComentarios(std::string inst) {
  * @param instrucciones
  * @return
  */
-std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::string> instrucciones) {
+std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::vector<std::string>> instrucciones) {
     std::vector<TagsInfo> tempTags;
     TagsInfo temp;
     int PC = 0;
     int index;
     for (int i = 0; i < instrucciones.size(); i++) {
-        index = isThere(instrucciones[i], ':');
+        index = isThere(instrucciones[i][0], ':');
         if (index != -1) {
             temp.numInstruccion = PC;
-            temp.tag = getTag(instrucciones[i].substr(0, index));
+            temp.tag = getTag(instrucciones[i][0].substr(0, index));
             tempTags.push_back(temp);
         } else {
             PC++;
@@ -277,6 +269,160 @@ std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::string>
     }
     return tempTags;
 }
+
+// AQUI EMPIEZA EL CAMBIO
+
+std::vector<std::vector<std::string>> InstructionHelper::splitInst(std::vector<std::string> instrucciones) {
+    std::vector<std::string> partes = {};
+    std::vector<std::vector<std::string>> tempFull;
+    std::string temp = "";
+    for (int i = 0; i < instrucciones.size(); i++) {
+        partes = {};
+        temp = "";
+        for (int j = 0; j < instrucciones[i].length(); j++) {
+            if ((instrucciones[i][j] == ',' || instrucciones[i][j] == ' ' || instrucciones[i][j] == '#') &&
+                temp != "") {
+                partes.push_back(temp);
+                temp = "";
+            } else if (j == instrucciones[i].length() - 1) {
+                temp += instrucciones[i][j];
+                partes.push_back(temp);
+            } else if (instrucciones[i][j] != ' ') {
+                temp += instrucciones[i][j];
+            }
+        }
+        if (!partes.empty()) {
+            tempFull.push_back(partes);
+        }
+    }
+    return tempFull;
+}
+
+std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std::vector<std::string>> instrucciones) {
+    std::vector<std::vector<std::string>> tempFix;
+    std::vector<std::string> registrosDestinoUso = {"PAD", "PAD", "PAD",
+                                                    "PAD"}; // max 4 -> if >4 -> pop_back(), rota
+    std::vector<std::string> inst;
+    std::string rd, rs, rn;
+    int rdIndex, rsIndex, rnIndex; // para saber en que posicion esta el registro destino en uso y calcular nops
+    int tipoInst;
+    for (int i = 0; i < instrucciones.size(); i++) {
+        // para monitorear los registros usados
+        //for (int j = 0; j < registrosDestinoUso.size(); j++) {
+        //    std::cout << registrosDestinoUso[j] << " ,";
+        //}
+        //std::cout << std::endl;
+        inst = instrucciones[i];
+        tipoInst = getTipo(inst[0]);
+        if (inst[0] == "NOP") {
+            tempFix.push_back(inst);
+            registrosDestinoUso.pop_back();
+            registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+        } else if (tipoInst == INST_DATOS) {
+            rn = getTag(inst[2]);
+            rd = getTag(inst[1]);
+            if (instrucciones[i].size() < 3) { // inmediato
+                if (isThere(casoRdOper, inst[0]) != -1) { // Caso CMP
+                    rdIndex = isThere(registrosDestinoUso, rd);
+                    if (rdIndex != -1) { // en caso que algun Rd este en uso
+                        for (int k = 0; k < (3 - rdIndex); k++) { // la cantidad de nops
+                            tempFix.push_back({"NOP"});
+                            registrosDestinoUso.pop_back();
+                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+                        }
+                    }
+                    tempFix.push_back(inst);
+                    registrosDestinoUso.pop_back();
+                    registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+                } else {
+                    rnIndex = isThere(registrosDestinoUso, rn);
+                    if (rnIndex != -1) { // en caso que algun Rd este en uso
+                        for (int k = 0; k < (3 - rnIndex); k++) { // la cantidad de nops
+                            tempFix.push_back({"NOP"});
+                            registrosDestinoUso.pop_back();
+                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+                        }
+                    }
+                    tempFix.push_back(inst);
+                    registrosDestinoUso.pop_back();
+                    registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
+                }
+            } else { // sin inmediato
+                rs = getTag(inst[3]);
+                if (isThere(casoRdOper, inst[0]) != -1) { // Caso CMP
+                    rdIndex = isThere(registrosDestinoUso, rd);
+                    rnIndex = isThere(registrosDestinoUso, rn);
+                    if (rdIndex != -1 || rnIndex != -1) { // en caso que algun Rd este en uso
+                        for (int k = 0; k < (3 - min(rdIndex, rnIndex)); k++) { // la cantidad de nops
+                            tempFix.push_back({"NOP"});
+                            registrosDestinoUso.pop_back();
+                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+                        }
+                    }
+                    tempFix.push_back(inst);
+                    registrosDestinoUso.pop_back();
+                    registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+                } else {
+                    rnIndex = isThere(registrosDestinoUso, rn);
+                    rsIndex = isThere(registrosDestinoUso, rs);
+                    if (rnIndex != -1 || rsIndex != -1) { // en caso que algun Rd este en uso
+                        for (int k = 0; k < (3 - min(rnIndex, rsIndex)); k++) { // la cantidad de nops
+                            tempFix.push_back({"NOP"});
+                            registrosDestinoUso.pop_back();
+                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+                        }
+                    }
+                    tempFix.push_back(inst);
+                    registrosDestinoUso.pop_back();
+                    registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
+                }
+            }
+        } else if (tipoInst == INST_MEMORIA) {
+            rn = getTag(inst[2]);
+            rd = getTag(inst[1]);
+            if (isThere(casoRdOper, inst[0]) != -1) { // Caso STR o SPX
+                rdIndex = isThere(registrosDestinoUso, rd);
+                rnIndex = isThere(registrosDestinoUso, rn);
+                if (rdIndex != -1 || rnIndex != -1) { // en caso que algun Rd este en usos
+                    for (int k = 0; k < (3 - min(rdIndex, rnIndex)); k++) { // la cantidad de nops
+                        tempFix.push_back({"NOP"});
+                        registrosDestinoUso.pop_back();
+                        registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+                    }
+                }
+                tempFix.push_back(inst);
+                registrosDestinoUso.pop_back();
+                registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+            } else {
+                rnIndex = isThere(registrosDestinoUso, rn);
+                if (rnIndex != -1) { // en caso que algun Rd este en uso
+                    for (int k = 0; k < (3 - rnIndex); k++) { // la cantidad de nops
+                        tempFix.push_back({"NOP"});
+                        registrosDestinoUso.pop_back();
+                        registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+                    }
+                }
+                tempFix.push_back(inst);
+                registrosDestinoUso.pop_back();
+                registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
+            }
+        } else if (tipoInst == INST_BRANCH) {
+            tempFix.push_back(inst);
+            registrosDestinoUso.pop_back();
+            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+            for (int k = 0; k < 4; k++) { // la cantidad de nops despues del Branch
+                tempFix.push_back({"NOP"});
+                registrosDestinoUso.pop_back();
+                registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
+            }
+        } else {
+            tempFix.push_back(inst);
+        }
+    }
+    return tempFix;
+}
+
+// AQUI TERMINA
 
 /**
  * Divide las instrucciones con un delimitador

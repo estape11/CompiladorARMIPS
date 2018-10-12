@@ -6,6 +6,14 @@
 
 #define COMPILATION_ERROR -1
 
+template<class T>
+void static printVector(std::vector<T> matrix) {
+    for (int i = 0; i < matrix.size(); i++) {
+        if (i == matrix.size() - 1) std::cout << matrix[i] << std::endl;
+        else std::cout << matrix[i] << ", ";
+    }
+}
+
 /**
  * Main del programa, debe llamarse con parametros para ejecutar el programa
  * @param argc
@@ -16,13 +24,23 @@ int main(int argc, char *argv[]) {
     if (argc != 1) {
         std::string fileDir, condicion;
         bool debug;
+        int pc = 1;
         if (argc >= 3) {
             fileDir = std::string(argv[argc - 1]);
             condicion = std::string(argv[1]); // si es -c
             debug = (std::string(argv[2]) == "-d");
             if (condicion == "-c") {
                 // Etapa de lectura del archivo a compilar
-                std::vector<std::string> instrucciones = InstructionHelper::getInstrucciones(fileDir);
+                std::vector<std::vector<std::string>> instruccionesLineas = InstructionHelper::getInstrucciones(
+                        fileDir);
+                std::vector<std::vector<std::string>> instrucciones = InstructionHelper::fixNOP(instruccionesLineas);
+                if (debug) {
+                    std::cout<<"Debug: Instrucciones corregidas con NOP Inicio"<<std::endl;
+                    for (int i = 0; i < instrucciones.size(); i++) {
+                        printVector(instrucciones[i]);
+                    }
+                    std::cout<<"Debug: Instrucciones corregidas con NOP Fin"<<std::endl;
+                }
                 if (instrucciones.size() != 0) {
                     std::vector<TagsInfo> tags = InstructionHelper::getTagsAddress(instrucciones);
                     std::vector<std::string> instruccionesBin;
@@ -30,7 +48,8 @@ int main(int argc, char *argv[]) {
                     if (debug) {
                         std::cout << "Debug: Tags Disponibles Inicio" << std::endl;
                         for (int i = 0; i < tags.size(); i++) {
-                            std::cout << ">> Tag: " << tags[i].tag << std::endl;
+                            std::cout << ">> Tag: " << tags[i].tag << ", direccion: " << tags[i].numInstruccion
+                                      << std::endl;
                         }
                         std::cout << "Debug: Tags Disponibles Fin" << std::endl;
                     }
@@ -39,22 +58,22 @@ int main(int argc, char *argv[]) {
                     for (int i = 0; i < instrucciones.size(); i++) {
                         try {
                             if (debug) {
-                                std::cout << "Debug: Linea actual: " << instrucciones[i] << std::endl;
+                                std::cout << "Debug: Linea actual: ";
+                                printVector(instrucciones[i]);
                             }
-                            if (InstructionHelper::isThere(instrucciones[i], ':') == -1) {
+                            if (InstructionHelper::isThere(instrucciones[i][0], ':') == -1) {
                                 if (debug) {
-                                    std::cout << "Debug: Instruccion actual: " << instrucciones[i] << std::endl;
+                                    std::cout << "Debug: Instruccion actual: ";
+                                    printVector(instrucciones[i]);
                                 }
-                                if (instrucciones[i][0] == 'B') { // caso de branches
-                                    std::vector<std::string> instTemp = InstructionHelper::splitInst(instrucciones[i],
-                                                                                                     ' ');
-                                    int dirTag = InstructionHelper::isThere(tags, instTemp[1]);
-                                    instTemp[1] = BaseHelper::decimalToBin(dirTag, 14);
+                                if (instrucciones[i][0][0] == 'B') { // caso de branches
+
+                                    int dirTag = InstructionHelper::isThere(tags, instrucciones[i][1]);
+                                    instrucciones[i][1] = BaseHelper::decimalToBin(dirTag, 27);
                                     try {
-                                        instruccionesBin.push_back(
-                                                InstructionHelper::getInst(instTemp[0] + instTemp[1]));
+                                        instruccionesBin.push_back(InstructionHelper::getInst(instrucciones[i]));
                                     } catch (std::exception &e) {
-                                        std::cout << ">> Etiqueta de branch no encontrado. Linea " << i + 1
+                                        std::cout << ">> Etiqueta de branch no encontrado. Linea " << pc + 1
                                                   << std::endl; //se indexa de 0 en adelante
                                         return COMPILATION_ERROR;
                                     }
@@ -62,25 +81,23 @@ int main(int argc, char *argv[]) {
                                 } else {
                                     instBinTemp = InstructionHelper::getInst(instrucciones[i]);
                                     if (instBinTemp == "") {
-                                        std::cout << ">> Error de sintaxis. Linea " << i + 1
+                                        std::cout << ">> Error de sintaxis. Linea " << pc + 1
                                                   << std::endl; //se indexa de 0 en adelante
                                         return COMPILATION_ERROR;
                                     }
                                     instruccionesBin.push_back(instBinTemp);
                                 }
+                                if (instrucciones[i][0] != "NOP") {
+                                    pc++;
+                                }
                             }
                         } catch (std::exception &e) {
-                            std::cout << ">> Error en la instruccion, incompleta o erronea. Linea " << i + 1
+                            std::cout << ">> Error en la instruccion, incompleta o erronea. Linea " << pc + 1
                                       << std::endl; //se indexa de 0 en adelante
                             return COMPILATION_ERROR;
                         }
                     }
-                    // Etapa de correccion de NOPs en Branch
-                    std::vector<std::string> instBinBranches = InstructionHelper::fixBranches(instruccionesBin);
-                    // Etapa de correccion de errores de datos
-                    std::vector<std::string> instBinFull = InstructionHelper::fixDependenciaDatos(instBinBranches);
-                    // Etapa de guardado
-                    InstructionHelper::saveInstrucciones(instBinFull, fileDir);
+                    InstructionHelper::saveInstrucciones(instruccionesBin, fileDir);
                     // output en pantalla
                     auto tiempoFinal = std::chrono::high_resolution_clock::now();
                     std::cout << ">> Compilacion realizada con exito, tiempo transcurrido "

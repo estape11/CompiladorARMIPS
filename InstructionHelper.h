@@ -29,6 +29,7 @@ std::vector<std::string> static cmdTipoDatos = {"", "SUB", "ADD", "MOV", "", "",
 std::vector<std::string> static cmdTipoMemoria = {"STR", "LPX", "SPX", "LDR", "01"};
 std::vector<std::string> static cmdTipoBranch = {"BEQ", "BNE", "BGE", "BLT", "BGT", "BLE", "", "B", "10"};
 std::vector<std::string> static cmdRdOper = {"0111", "00", "10"}; // Que usan Rd como operador, CMP STR SPX
+std::vector<std::string> static casoRdOper = {"CMP", "STR", "SPX"}; // Que usan Rd como operador, CMP STR SPX
 std::vector<std::string> static condTipoDatos = {"EQ", "NE", "GE", "LT", "GT", "LE", "XX",
                                                  ""}; // XX es un condicional disponible
 //std::vector<std::string> static cmdDosOper = {"1010", "1011", "0011"}; // Que usan solo 2 operandos, AVR CUM MOV
@@ -38,8 +39,7 @@ std::vector<std::string> static condTipoDatos = {"EQ", "NE", "GE", "LT", "GT", "
  */
 class InstructionHelper {
 public:
-
-    std::string static getInst(std::string);
+    std::string static getInst(std::vector<std::string>);
 
     std::string static getHeader(std::string, bool);
 
@@ -53,15 +53,19 @@ public:
 
     std::string static getBranch(std::string inst);
 
-    std::vector<std::string> static getInstrucciones(std::string);
+    std::vector<std::vector<std::string>> static getInstrucciones(std::string);
 
-    std::vector<TagsInfo> static getTagsAddress(std::vector<std::string>);
+    std::vector<TagsInfo> static getTagsAddress(std::vector<std::vector<std::string>>);
+
+    std::vector<std::vector<std::string>> static splitInst(std::vector<std::string>);
 
     std::vector<std::string> static splitInst(std::string, char);
 
     std::vector<std::string> static fixBranches(std::vector<std::string>);
 
     std::vector<std::string> static fixDependenciaDatos(std::vector<std::string>);
+
+    std::vector<std::vector<std::string>> static fixNOP(std::vector<std::vector<std::string>>);
 
     template<class T>
     int static isThere(std::vector<T>, T);
