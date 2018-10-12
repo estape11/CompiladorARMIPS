@@ -222,9 +222,10 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
     archivo.open(fileDir);
     if (archivo.is_open()) {
         while (getline(archivo, temp)) {
-            if (temp[0] == '\t') { // omite tabs
+            if (temp[0] == '\t') { // omite tabs de inicio
                 temp = temp.substr(1, temp.length());
             }
+            temp.erase(std::remove(temp.begin(), temp.end(), '\r'), temp.end());
             temp = removeComentarios(temp);// elimina los comentarios
             if (temp != "") {
                 tempInst.push_back(temp);
@@ -244,7 +245,9 @@ std::string InstructionHelper::removeComentarios(std::string inst) {
         if (inst[i] == '#') {
             break;
         } else {
-            temp += inst[i];
+            if (inst[i] != '\n') {
+                temp += inst[i];
+            }
         }
     }
     return temp;
@@ -260,11 +263,11 @@ std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::string>
     TagsInfo temp;
     int PC = 0;
     int index;
-    for (auto &instruccion : instrucciones) {
-        index = isThere(instruccion, ':');
+    for (int i = 0; i < instrucciones.size(); i++) {
+        index = isThere(instrucciones[i], ':');
         if (index != -1) {
             temp.numInstruccion = PC;
-            temp.tag = getTag(instruccion);
+            temp.tag = getTag(instrucciones[i].substr(0, index));
             tempTags.push_back(temp);
         } else {
             PC++;
@@ -487,14 +490,13 @@ int InstructionHelper::isThere(std::string dato, char letra) {
  */
 int InstructionHelper::isThere(std::vector<TagsInfo> vector, std::string tag) {
     int temp = -1;
-    std::string tempTag;
+    std::string tempTag, tagLimpio;
+    tagLimpio = getTag(tag);
     for (int i = 0; i < vector.size(); i++) {
         tempTag = vector[i].tag;
-        for (int j = 0; j < tempTag.size(); j++) {
-            if (tempTag[j] == tag[i]) {
-                temp = vector[i].numInstruccion;
-                return temp;
-            }
+        if (tempTag == tagLimpio) {
+            temp = vector[i].numInstruccion;
+            break;
         }
     }
     return temp;
