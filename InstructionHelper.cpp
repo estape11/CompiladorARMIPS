@@ -225,7 +225,10 @@ std::vector<std::string> InstructionHelper::getInstrucciones(std::string fileDir
             if (temp[0] == '\t') { // omite tabs de inicio
                 temp = temp.substr(1, temp.length());
             }
-            temp.erase(std::remove(temp.begin(), temp.end(), '\r'), temp.end());
+            //temp.erase(std::remove(temp.begin(), temp.end(), '\r'), temp.end());
+            if(temp[temp.length()-1]=='\r'){
+                temp = temp.substr(0, temp.length()-1);
+            }
             temp = removeComentarios(temp);// elimina los comentarios
             if (temp != "") {
                 tempInst.push_back(temp);
