@@ -25,7 +25,9 @@ std::string InstructionHelper::getInst(std::string inst) {
         }
     }
     std::string instTemp;
-    if (getTipo(partes[0]) == INST_DATOS) {
+    if (temp == "NOP") {
+        instTemp = BaseHelper::decimalToBin(0, 32);
+    } else if (getTipo(partes[0]) == INST_DATOS) {
         bool inmediato;
         // verificacion si posee inmediato y que que parte
         if (partes.size() > 3) { // en caso de no tener 3er registro inmediato
@@ -69,7 +71,6 @@ std::string InstructionHelper::getInst(std::string inst) {
     } else if (getTipo(partes[0]) == INST_BRANCH) {
         instTemp += getHeader(partes[0], false);
     }
-
     return instTemp;
 
 }
@@ -263,7 +264,7 @@ std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::string>
         index = isThere(instruccion, ':');
         if (index != -1) {
             temp.numInstruccion = PC;
-            temp.tag = instruccion.substr(0, index);
+            temp.tag = getTag(instruccion);
             tempTags.push_back(temp);
         } else {
             PC++;
@@ -478,6 +479,28 @@ int InstructionHelper::isThere(std::string dato, char letra) {
 }
 
 /**
+ * Para saber si hay un elemento especifico dentro del vector de tags
+ * @tparam T
+ * @param vector
+ * @param dato
+ * @return
+ */
+int InstructionHelper::isThere(std::vector<TagsInfo> vector, std::string tag) {
+    int temp = -1;
+    std::string tempTag;
+    for (int i = 0; i < vector.size(); i++) {
+        tempTag = vector[i].tag;
+        for (int j = 0; j < tempTag.size(); j++) {
+            if (tempTag[j] == tag[i]) {
+                temp = vector[i].numInstruccion;
+                return temp;
+            }
+        }
+    }
+    return temp;
+}
+
+/**
  * Compara solo si son positivos
  * @param a
  * @param b
@@ -495,6 +518,28 @@ int InstructionHelper::min(int a, int b) {
     }
 }
 
+/**
+ * Limpia el tag
+ * @param a
+ * @param b
+ * @return
+ */
+std::string InstructionHelper::getTag(std::string tag) {
+    std::string temp;
+    for (int i = 0; i < tag.size(); i++) {
+        if (tag[i] != ' ' && tag[i] != '\t' && tag[i] != '\n' && tag[i] != ':') {
+            temp += tag[i];
+        }
+    }
+    return temp;
+}
+
+/**
+ * Guarda las instrucciones en binario en un archivo
+ * @param inst
+ * @param dir
+ * @return
+ */
 bool InstructionHelper::saveInstrucciones(std::vector<std::string> inst, std::string dir) {
     std::string dirTemp;
     bool temp = false;

@@ -24,7 +24,7 @@ struct TagsInfo {
 /**
  * Definicion de los tokens de las instrucciones
  */
-std::vector<std::string> static cmdTipoDatos = {"NOP", "SUB", "ADD", "MOV", "", "", "ORR", "CMP", "LSL", "LSR", "AVR",
+std::vector<std::string> static cmdTipoDatos = {"", "SUB", "ADD", "MOV", "", "", "ORR", "CMP", "LSL", "LSR", "AVR",
                                                 "CUM", "00"};
 std::vector<std::string> static cmdTipoMemoria = {"STR", "LPX", "SPX", "LDR", "01"};
 std::vector<std::string> static cmdTipoBranch = {"BEQ", "BNE", "BGE", "BLT", "BGT", "BLE", "", "B", "10"};
@@ -67,6 +67,10 @@ public:
     int static isThere(std::vector<T>, T);
 
     int static isThere(std::string, char);
+
+    std::string static getTag(std::string);
+
+    int static isThere(std::vector<TagsInfo> vector, std::string tag);
 
     int static min(int, int);
 
