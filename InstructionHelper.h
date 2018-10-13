@@ -28,11 +28,9 @@ std::vector<std::string> static cmdTipoDatos = {"", "SUB", "ADD", "MOV", "", "",
                                                 "CUM", "00"};
 std::vector<std::string> static cmdTipoMemoria = {"STR", "LPX", "SPX", "LDR", "01"};
 std::vector<std::string> static cmdTipoBranch = {"BEQ", "BNE", "BGE", "BLT", "BGT", "BLE", "", "B", "10"};
-std::vector<std::string> static cmdRdOper = {"0111", "00", "10"}; // Que usan Rd como operador, CMP STR SPX
 std::vector<std::string> static casoRdOper = {"CMP", "STR", "SPX"}; // Que usan Rd como operador, CMP STR SPX
 std::vector<std::string> static condTipoDatos = {"EQ", "NE", "GE", "LT", "GT", "LE", "XX",
                                                  ""}; // XX es un condicional disponible
-//std::vector<std::string> static cmdDosOper = {"1010", "1011", "0011"}; // Que usan solo 2 operandos, AVR CUM MOV
 
 /**
  * Clase para manipular instrucciones
@@ -50,8 +48,6 @@ public:
     std::string static getRegistro(std::string);
 
     int static getTipo(std::string);
-
-    std::string static getBranch(std::string inst);
 
     std::vector<std::vector<std::string>> static getInstrucciones(std::string);
 

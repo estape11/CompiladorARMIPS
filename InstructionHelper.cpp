@@ -124,7 +124,7 @@ std::string InstructionHelper::getHeader(std::string inst, bool inmediato) {
  * @return
  */
 std::string InstructionHelper::getInmediato(std::string inst, int bits) {
-    std::string temp = "";
+    std::string temp;
     if (inst[0] == '-') {
         temp = BaseHelper::decimalToBin(-1 * std::stoi(inst.substr(1, inst.length())), bits);
     } else {

@@ -7,7 +7,7 @@
 #define COMPILATION_ERROR -1
 
 /**
- * Imprime 
+ * Imprime un vector
  * @tparam T
  * @param matrix
  */
@@ -26,6 +26,10 @@ void static printVector(std::vector<T> matrix) {
  * @return
  */
 int main(int argc, char *argv[]) {
+    std::cout << "\n==========================================================================" << std::endl;
+    std::cout << "================= Compilador para la arquitectura ARMIPS =================" << std::endl;
+    std::cout << "==========================================================================\n" << std::endl;
+
     if (argc != 1) {
         std::string fileDir, condicion;
         bool debug;
@@ -40,11 +44,11 @@ int main(int argc, char *argv[]) {
                         fileDir);
                 std::vector<std::vector<std::string>> instrucciones = InstructionHelper::fixNOP(instruccionesLineas);
                 if (debug) {
-                    std::cout<<"Debug: Instrucciones corregidas con NOP Inicio"<<std::endl;
+                    std::cout << "Debug: Instrucciones corregidas con NOP Inicio" << std::endl;
                     for (int i = 0; i < instrucciones.size(); i++) {
                         printVector(instrucciones[i]);
                     }
-                    std::cout<<"Debug: Instrucciones corregidas con NOP Fin"<<std::endl;
+                    std::cout << "Debug: Instrucciones corregidas con NOP Fin" << std::endl;
                 }
                 if (instrucciones.size() != 0) {
                     std::vector<TagsInfo> tags = InstructionHelper::getTagsAddress(instrucciones);
@@ -121,9 +125,12 @@ int main(int argc, char *argv[]) {
         }
     } else {
         std::cout << ">> Para compilar, debe indicar la bandera -c y la ruta del archivo .asm" << std::endl;
-        std::cout << "Ejemplo-> ./Compilador -c /Users/USUARIO/Documents/archivo.asm" << std::endl;
+        std::cout << "\t Ejemplo-> ./Compilador -c /Users/USUARIO/Documents/archivo.asm" << std::endl;
         std::cout << ">> Bandera -d para ver el log de la compilacion" << std::endl;
-    }
+        std::cout << "\t Ejemplo-> ./Compilador -c -d /Users/USUARIO/Documents/archivo.asm" << std::endl;
 
+    }
+    std::cout << "\n==========================================================================" << std::endl;
+    std::cout << "==========================================================================\n" << std::endl;
     return 0;
 }
