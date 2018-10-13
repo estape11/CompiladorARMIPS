@@ -423,6 +423,10 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                         registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                     }
                 }
+                if(tag){
+                    tempFix.push_back(ultimoTag);
+                    tag=false;
+                }
                 tempFix.push_back(inst);
                 registrosDestinoUso.pop_back();
                 registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
