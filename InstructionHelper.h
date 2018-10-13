@@ -59,12 +59,6 @@ public:
 
     std::vector<std::vector<std::string>> static splitInst(std::vector<std::string>);
 
-    std::vector<std::string> static splitInst(std::string, char);
-
-    std::vector<std::string> static fixBranches(std::vector<std::string>);
-
-    std::vector<std::string> static fixDependenciaDatos(std::vector<std::string>);
-
     std::vector<std::vector<std::string>> static fixNOP(std::vector<std::vector<std::string>>);
 
     template<class T>

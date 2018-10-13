@@ -39,7 +39,7 @@ std::string InstructionHelper::getInst(std::vector<std::string> inst) {
             if (inst.size() < 4) {
                 instTemp += BaseHelper::decimalToBin(0, 14);
             } else {
-                instTemp += getRegistro(inst[2]);
+                instTemp += getRegistro(inst[3]);
                 instTemp += BaseHelper::decimalToBin(0, 10);
             }
         }
@@ -177,30 +177,6 @@ int InstructionHelper::getTipo(std::string inst) {
     return -1;
 }
 
-/**
- * Obtiene el branch especifico
- * @param inst
- * @return
- */
-std::string InstructionHelper::getBranch(std::string inst) {
-    std::string instTemp = inst.substr(0, 3);
-    std::string temp;
-    for (int i = 0; i < cmdTipoBranch.size(); i++) {
-        if (cmdTipoBranch[i] == instTemp) {
-            temp += BaseHelper::decimalToBin(i, 3);
-            temp += cmdTipoBranch[cmdTipoBranch.size() - 1];
-            temp += getInmediato(inst.substr(3, inst.length()), 27);
-            break;
-        }
-    }
-    if (temp == "") {
-        temp += BaseHelper::decimalToBin(7, 3);
-        temp += cmdTipoBranch[cmdTipoBranch.size() - 1];
-        temp += getInmediato(inst.substr(1, inst.length()), 27);
-    }
-    return temp;
-}
-
 
 /**
  * Retorna un vector con las instrucciones leidas
@@ -270,8 +246,6 @@ std::vector<TagsInfo> InstructionHelper::getTagsAddress(std::vector<std::vector<
     return tempTags;
 }
 
-// AQUI EMPIEZA EL CAMBIO
-
 std::vector<std::vector<std::string>> InstructionHelper::splitInst(std::vector<std::string> instrucciones) {
     std::vector<std::string> partes = {};
     std::vector<std::vector<std::string>> tempFull;
@@ -298,13 +272,18 @@ std::vector<std::vector<std::string>> InstructionHelper::splitInst(std::vector<s
     return tempFull;
 }
 
+/**
+ * Agrega NOPs para solucionar la dependencia de datos
+ * @param instrucciones
+ * @return
+ */
 std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std::vector<std::string>> instrucciones) {
     std::vector<std::vector<std::string>> tempFix;
     std::vector<std::string> registrosDestinoUso = {"PAD", "PAD", "PAD",
                                                     "PAD"}; // max 4 -> if >4 -> pop_back(), rota
     std::vector<std::string> inst, ultimoTag;
     std::string rd, rs, rn;
-    bool tag=false;
+    bool tag = false;
     int rdIndex, rsIndex, rnIndex; // para saber en que posicion esta el registro destino en uso y calcular nops
     int tipoInst;
     for (int i = 0; i < instrucciones.size(); i++) {
@@ -332,9 +311,9 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                             registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                         }
                     }
-                    if(tag){
+                    if (tag) {
                         tempFix.push_back(ultimoTag);
-                        tag=false;
+                        tag = false;
                     }
                     tempFix.push_back(inst);
                     registrosDestinoUso.pop_back();
@@ -348,9 +327,9 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                             registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                         }
                     }
-                    if(tag){
+                    if (tag) {
                         tempFix.push_back(ultimoTag);
-                        tag=false;
+                        tag = false;
                     }
                     tempFix.push_back(inst);
                     registrosDestinoUso.pop_back();
@@ -368,9 +347,9 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                             registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                         }
                     }
-                    if(tag){
+                    if (tag) {
                         tempFix.push_back(ultimoTag);
-                        tag=false;
+                        tag = false;
                     }
                     tempFix.push_back(inst);
                     registrosDestinoUso.pop_back();
@@ -385,9 +364,9 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                             registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                         }
                     }
-                    if(tag){
+                    if (tag) {
                         tempFix.push_back(ultimoTag);
-                        tag=false;
+                        tag = false;
                     }
                     tempFix.push_back(inst);
                     registrosDestinoUso.pop_back();
@@ -407,9 +386,9 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                         registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                     }
                 }
-                if(tag){
+                if (tag) {
                     tempFix.push_back(ultimoTag);
-                    tag=false;
+                    tag = false;
                 }
                 tempFix.push_back(inst);
                 registrosDestinoUso.pop_back();
@@ -423,18 +402,18 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                         registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                     }
                 }
-                if(tag){
+                if (tag) {
                     tempFix.push_back(ultimoTag);
-                    tag=false;
+                    tag = false;
                 }
                 tempFix.push_back(inst);
                 registrosDestinoUso.pop_back();
                 registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
             }
         } else if (tipoInst == INST_BRANCH) {
-            if(tag){
+            if (tag) {
                 tempFix.push_back(ultimoTag);
-                tag=false;
+                tag = false;
             }
             tempFix.push_back(inst);
             registrosDestinoUso.pop_back();
@@ -446,178 +425,8 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
             }
         } else {
             //tempFix.push_back(inst);
-            ultimoTag=inst;
-            tag=true;
-        }
-    }
-    return tempFix;
-}
-
-// AQUI TERMINA
-
-/**
- * Divide las instrucciones con un delimitador
- * @param inst
- * @param delimitador
- * @return
- */
-std::vector<std::string> InstructionHelper::splitInst(std::string inst, char delimitador) {
-    std::vector<std::string> partes = {};
-    std::string temp = "";
-    for (int i = 0; i < inst.length(); i++) {
-        if ((inst[i] == delimitador) && temp != "") {
-            partes.push_back(temp);
-            temp = "";
-        } else if (i == inst.length() - 1) {
-            temp += inst[i];
-            partes.push_back(temp);
-        } else {
-            temp += inst[i];
-        }
-    }
-    return partes;
-}
-
-/**
- * Agrega NOPs para solucionar el riesgo del branch
- * @param inst
- * @return
- */
-std::vector<std::string> InstructionHelper::fixBranches(std::vector<std::string> inst) {
-    std::vector<std::string> tempFix;
-    std::string nop = BaseHelper::decimalToBin(0, 32);
-    int tipoInst;
-    for (int i = 0; i < inst.size(); i++) {
-        tipoInst = BaseHelper::binToDecimal(inst[i].substr(3, 2));
-        if (tipoInst == 2 && i != (inst.size() - 1)) {
-            tempFix.push_back(inst[i]);
-            // se agregan 4 nops a branch
-            tempFix.push_back(nop);
-            tempFix.push_back(nop);
-            tempFix.push_back(nop);
-            tempFix.push_back(nop);
-        } else {
-            tempFix.push_back(inst[i]);
-        }
-    }
-    return tempFix;
-}
-
-/**
- * Agrega NOPs para reparar la dependencia de datos
- * @param inst
- * @return
- */
-std::vector<std::string> InstructionHelper::fixDependenciaDatos(std::vector<std::string> inst) {
-    std::vector<std::string> tempFix;
-    std::vector<std::string> registrosDestinoUso = {"", "", "", ""}; // max 4 -> if >4 -> pop_back(), rota
-    std::string nop = BaseHelper::decimalToBin(0, 32);
-    std::string rd, rs, rn;
-    int rdIndex, rsIndex, rnIndex; // para saber en que posicion esta el registro destino en uso y calcular nops
-    int tipoInst;
-    for (int i = 0; i < inst.size(); i++) {
-        // para monitorear los registros usados
-        //for (int j = 0; j < registrosDestinoUso.size(); j++) {
-        //    std::cout << registrosDestinoUso[j] << " ,";
-        //}
-        //std::cout << std::endl;
-        tipoInst = BaseHelper::binToDecimal(inst[i].substr(3, 2));
-        if (inst[i] == nop) {
-            tempFix.push_back(inst[i]);
-            registrosDestinoUso.pop_back();
-            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-        } else if (tipoInst == 0) {
-            rn = inst[i].substr(10, 4);
-            rd = inst[i].substr(14, 4);
-            if (inst[i][5] == '1') { // inmediato
-                if (isThere(cmdRdOper, inst[i].substr(6, 4)) != -1) { // Caso CMP
-                    rdIndex = isThere(registrosDestinoUso, rd);
-                    if (rdIndex != -1) { // en caso que algun Rd este en uso
-                        for (int k = 0; k < (3 - rdIndex); k++) { // la cantidad de nops
-                            tempFix.push_back(nop);
-                            registrosDestinoUso.pop_back();
-                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-                        }
-                    }
-                    tempFix.push_back(inst[i]);
-                    registrosDestinoUso.pop_back();
-                    registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-                } else {
-                    rnIndex = isThere(registrosDestinoUso, rn);
-                    if (rnIndex != -1) { // en caso que algun Rd este en uso
-                        for (int k = 0; k < (3 - rnIndex); k++) { // la cantidad de nops
-                            tempFix.push_back(nop);
-                            registrosDestinoUso.pop_back();
-                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-                        }
-                    }
-                    tempFix.push_back(inst[i]);
-                    registrosDestinoUso.pop_back();
-                    registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
-                }
-            } else { // sin inmediato
-                rs = inst[i].substr(18, 4);
-                if (isThere(cmdRdOper, inst[i].substr(6, 4)) != -1) { // Caso CMP
-                    rdIndex = isThere(registrosDestinoUso, rd);
-                    rnIndex = isThere(registrosDestinoUso, rn);
-                    if (rdIndex != -1 || rnIndex != -1) { // en caso que algun Rd este en uso
-                        for (int k = 0; k < (3 - min(rdIndex, rnIndex)); k++) { // la cantidad de nops
-                            tempFix.push_back(nop);
-                            registrosDestinoUso.pop_back();
-                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-                        }
-                    }
-                    tempFix.push_back(inst[i]);
-                    registrosDestinoUso.pop_back();
-                    registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-                } else {
-                    rnIndex = isThere(registrosDestinoUso, rn);
-                    rsIndex = isThere(registrosDestinoUso, rs);
-                    if (rnIndex != -1 || rsIndex != -1) { // en caso que algun Rd este en uso
-                        for (int k = 0; k < (3 - min(rnIndex, rsIndex)); k++) { // la cantidad de nops
-                            tempFix.push_back(nop);
-                            registrosDestinoUso.pop_back();
-                            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-                        }
-                    }
-                    tempFix.push_back(inst[i]);
-                    registrosDestinoUso.pop_back();
-                    registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
-                }
-            }
-        } else if (tipoInst == 1) {
-            rn = inst[i].substr(10, 4);
-            rd = inst[i].substr(14, 4);
-            if (isThere(cmdRdOper, inst[i].substr(5, 2)) != -1) { // Caso STR o SPX
-                rdIndex = isThere(registrosDestinoUso, rd);
-                rnIndex = isThere(registrosDestinoUso, rn);
-                if (rdIndex != -1 || rnIndex != -1) { // en caso que algun Rd este en usos
-                    for (int k = 0; k < (3 - min(rdIndex, rnIndex)); k++) { // la cantidad de nops
-                        tempFix.push_back(nop);
-                        registrosDestinoUso.pop_back();
-                        registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-                    }
-                }
-                tempFix.push_back(inst[i]);
-                registrosDestinoUso.pop_back();
-                registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-            } else {
-                rnIndex = isThere(registrosDestinoUso, rn);
-                if (rnIndex != -1) { // en caso que algun Rd este en uso
-                    for (int k = 0; k < (3 - rnIndex); k++) { // la cantidad de nops
-                        tempFix.push_back(nop);
-                        registrosDestinoUso.pop_back();
-                        registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
-                    }
-                }
-                tempFix.push_back(inst[i]);
-                registrosDestinoUso.pop_back();
-                registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
-            }
-        } else {
-            tempFix.push_back(inst[i]);
-            registrosDestinoUso.pop_back();
-            registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
+            ultimoTag = inst;
+            tag = true;
         }
     }
     return tempFix;

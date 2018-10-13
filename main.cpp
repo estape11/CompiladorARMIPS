@@ -6,6 +6,11 @@
 
 #define COMPILATION_ERROR -1
 
+/**
+ * Imprime 
+ * @tparam T
+ * @param matrix
+ */
 template<class T>
 void static printVector(std::vector<T> matrix) {
     for (int i = 0; i < matrix.size(); i++) {
