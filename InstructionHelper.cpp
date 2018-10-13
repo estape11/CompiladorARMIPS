@@ -302,8 +302,9 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
     std::vector<std::vector<std::string>> tempFix;
     std::vector<std::string> registrosDestinoUso = {"PAD", "PAD", "PAD",
                                                     "PAD"}; // max 4 -> if >4 -> pop_back(), rota
-    std::vector<std::string> inst;
+    std::vector<std::string> inst, ultimoTag;
     std::string rd, rs, rn;
+    bool tag=false;
     int rdIndex, rsIndex, rnIndex; // para saber en que posicion esta el registro destino en uso y calcular nops
     int tipoInst;
     for (int i = 0; i < instrucciones.size(); i++) {
@@ -321,7 +322,7 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
         } else if (tipoInst == INST_DATOS) {
             rn = getTag(inst[2]);
             rd = getTag(inst[1]);
-            if (instrucciones[i].size() < 3) { // inmediato
+            if (instrucciones[i].size() <= 3) { // inmediato
                 if (isThere(casoRdOper, inst[0]) != -1) { // Caso CMP
                     rdIndex = isThere(registrosDestinoUso, rd);
                     if (rdIndex != -1) { // en caso que algun Rd este en uso
@@ -330,6 +331,10 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                             registrosDestinoUso.pop_back();
                             registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                         }
+                    }
+                    if(tag){
+                        tempFix.push_back(ultimoTag);
+                        tag=false;
                     }
                     tempFix.push_back(inst);
                     registrosDestinoUso.pop_back();
@@ -342,6 +347,10 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                             registrosDestinoUso.pop_back();
                             registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                         }
+                    }
+                    if(tag){
+                        tempFix.push_back(ultimoTag);
+                        tag=false;
                     }
                     tempFix.push_back(inst);
                     registrosDestinoUso.pop_back();
@@ -359,6 +368,10 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                             registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                         }
                     }
+                    if(tag){
+                        tempFix.push_back(ultimoTag);
+                        tag=false;
+                    }
                     tempFix.push_back(inst);
                     registrosDestinoUso.pop_back();
                     registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
@@ -371,6 +384,10 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                             registrosDestinoUso.pop_back();
                             registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                         }
+                    }
+                    if(tag){
+                        tempFix.push_back(ultimoTag);
+                        tag=false;
                     }
                     tempFix.push_back(inst);
                     registrosDestinoUso.pop_back();
@@ -390,6 +407,10 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                         registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
                     }
                 }
+                if(tag){
+                    tempFix.push_back(ultimoTag);
+                    tag=false;
+                }
                 tempFix.push_back(inst);
                 registrosDestinoUso.pop_back();
                 registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
@@ -407,6 +428,10 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                 registrosDestinoUso.insert(registrosDestinoUso.begin(), rd);
             }
         } else if (tipoInst == INST_BRANCH) {
+            if(tag){
+                tempFix.push_back(ultimoTag);
+                tag=false;
+            }
             tempFix.push_back(inst);
             registrosDestinoUso.pop_back();
             registrosDestinoUso.insert(registrosDestinoUso.begin(), "");
@@ -416,7 +441,9 @@ std::vector<std::vector<std::string>> InstructionHelper::fixNOP(std::vector<std:
                 registrosDestinoUso.insert(registrosDestinoUso.begin(), "PAD");
             }
         } else {
-            tempFix.push_back(inst);
+            //tempFix.push_back(inst);
+            ultimoTag=inst;
+            tag=true;
         }
     }
     return tempFix;
